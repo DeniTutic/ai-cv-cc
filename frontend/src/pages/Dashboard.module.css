@@ -1,0 +1,51 @@
+.page { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+
+.header { margin-bottom: 28px; }
+.header h1 { font-family: var(--font-display); font-size: 32px; letter-spacing: -0.5px; color: var(--brand); margin-bottom: 6px; }
+.header p { color: #777; font-size: 15px; font-weight: 300; }
+
+.statsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+.statCard { background: #fff; border: 1px solid #e8e8e4; border-radius: var(--radius-md); padding: 16px; text-align: center; }
+.statVal { font-family: var(--font-display); font-size: 28px; color: var(--brand); }
+.statLabel { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+
+.uploadCard { background: #fff; border: 1px solid #e8e8e4; border-radius: var(--radius-lg); padding: 28px; }
+.uploadCard h2 { font-family: var(--font-display); font-size: 22px; letter-spacing: -0.3px; margin-bottom: 6px; color: var(--brand); }
+.uploadCard > p { color: #777; font-size: 14px; font-weight: 300; margin-bottom: 20px; }
+
+.dropZone {
+  border: 2px dashed #e8e8e4;
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.dropZone:hover, .dragging {
+  border-color: var(--accent);
+  background: #e945600a;
+}
+
+.uploadIcon { font-size: 40px; margin-bottom: 14px; }
+.dropText { font-size: 15px; color: #555; margin-bottom: 12px; }
+.dropText span { color: var(--accent); font-weight: 500; text-decoration: underline; }
+.dropHint { font-size: 12px; color: #aaa; margin-top: 10px; }
+
+.pills { display: flex; gap: 6px; justify-content: center; }
+.pill { font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid #e8e8e4; color: #888; }
+
+.historyPrompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: #666;
+}
+
+.linkBtn { background: none; border: none; color: var(--accent); font-size: 14px; font-weight: 500; padding: 0; }
+.linkBtn:hover { text-decoration: underline; }
