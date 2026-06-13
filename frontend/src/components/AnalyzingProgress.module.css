@@ -1,0 +1,83 @@
+.wrap {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 72px 24px;
+  text-align: center;
+}
+
+.spinnerRing {
+  width: 64px;
+  height: 64px;
+  border: 3px solid #e8e8e4;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 28px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: -0.5px;
+  color: var(--brand);
+  margin-bottom: 8px;
+}
+
+.sub {
+  font-size: 14px;
+  color: #888;
+  font-weight: 300;
+  margin-bottom: 40px;
+}
+
+.checkpoints { text-align: left; }
+
+.checkpoint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0ee;
+  font-size: 14px;
+  color: #aaa;
+  transition: color .3s;
+}
+.checkpoint:last-child { border-bottom: none; }
+
+.checkpoint.done { color: #888; }
+.checkpoint.done span { text-decoration: line-through; }
+.checkpoint.active { color: var(--brand); font-weight: 500; }
+
+.icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #e8e8e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+  color: #ccc;
+  transition: all .3s;
+}
+
+.checkpoint.done .icon {
+  background: #3B6D11;
+  border-color: #3B6D11;
+  color: #fff;
+}
+.checkpoint.active .icon {
+  border-color: var(--accent);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse .8s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }

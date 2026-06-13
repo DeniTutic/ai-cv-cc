@@ -1,0 +1,164 @@
+.main { background: #fafaf9; }
+
+.hero {
+  text-align: center;
+  padding: 80px 24px 64px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 24px;
+  padding: 6px 16px;
+  border: 1px solid #e9456030;
+  border-radius: 999px;
+  background: #e945600a;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: var(--brand);
+  margin-bottom: 20px;
+}
+.heroTitle em { font-style: italic; color: var(--accent); }
+
+.heroSub {
+  font-size: 18px;
+  color: #555;
+  line-height: 1.6;
+  max-width: 520px;
+  margin: 0 auto 36px;
+  font-weight: 300;
+}
+
+.heroBtns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.heroNote { font-size: 12px; color: #999; margin-top: 16px; }
+
+/* Features */
+.featuresSection {
+  padding: 64px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 38px);
+  letter-spacing: -1px;
+  color: var(--brand);
+  margin-bottom: 40px;
+}
+
+.featGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.featCard {
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  transition: border-color .2s, transform .2s;
+}
+.featCard:hover { border-color: #e94560; transform: translateY(-2px); }
+.featIcon { font-size: 28px; margin-bottom: 12px; }
+.featCard h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; color: var(--brand); }
+.featCard p { font-size: 14px; color: #666; line-height: 1.5; }
+
+/* How it works */
+.howSection {
+  padding: 64px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  border-top: 1px solid #e8e8e4;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.stepCard {
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+}
+
+.stepNum {
+  font-family: var(--font-display);
+  font-size: 48px;
+  color: #e8e8e4;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.stepCard h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; color: var(--brand); }
+.stepCard p { font-size: 13px; color: #888; line-height: 1.5; }
+
+/* CTA */
+.ctaSection {
+  text-align: center;
+  padding: 72px 24px;
+  background: var(--brand);
+  color: #fff;
+}
+
+.ctaSection h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+
+.ctaSection p { font-size: 16px; color: rgba(255,255,255,.65); margin-bottom: 32px; font-weight: 300; }
+.ctaBtns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Buttons */
+.btnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 32px;
+  border-radius: var(--radius-md);
+  letter-spacing: -0.2px;
+}
+.btnPrimary:hover { background: var(--accent-hover); }
+
+.btnSecondary {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px solid #ddd;
+  font-size: 15px;
+  font-weight: 400;
+  padding: 13px 28px;
+  border-radius: var(--radius-md);
+}
+.btnSecondary:hover { border-color: var(--brand); }
+
+.ctaSection .btnSecondary { color: #fff; border-color: rgba(255,255,255,.3); }
+.ctaSection .btnSecondary:hover { border-color: rgba(255,255,255,.7); }
