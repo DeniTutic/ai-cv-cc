@@ -1,0 +1,101 @@
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  border-bottom: 1px solid #e8e8e4;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link {
+  font-size: 14px;
+  color: #666;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+}
+.link:hover { background: #f5f5f3; color: var(--brand); }
+.link.active { color: var(--brand); font-weight: 500; }
+
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e8e8e4;
+  font-size: 13px;
+  color: #444;
+}
+
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userName {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btnGhost {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #555;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+}
+.btnGhost:hover { background: #f5f5f3; }
+
+.btnOutline {
+  background: none;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  color: #555;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+}
+.btnOutline:hover { border-color: #aaa; color: #333; }
+
+.btnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+}
+.btnPrimary:hover { background: var(--accent-hover); }

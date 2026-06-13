@@ -1,0 +1,37 @@
+.card {
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+  flex: 1;
+}
+
+.score {
+  font-family: var(--font-display);
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.high { color: #3B6D11; }
+.mid  { color: #854F0B; }
+.low  { color: #A32D2D; }
+
+.label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.badgeGood { background: #EAF3DE; color: #3B6D11; }
+.badgeOk   { background: #FAEEDA; color: #854F0B; }
+.badgeBad  { background: #FCEBEB; color: #A32D2D; }
