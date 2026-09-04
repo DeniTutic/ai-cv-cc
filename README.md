@@ -1,162 +1,105 @@
 # CVlens — AI CV Analyzer
 
-A full-stack SaaS platform that lets users upload their CV and receive detailed AI-powered improvement recommendations. Built with React, Node.js, MongoDB, Auth0, and OpenAI GPT-4o.
+Upload a CV, get a prioritised action plan: exactly what to **add**, **remove** and
+**modify**, each item colour-coded by how much it costs you.
+
+Not a score and a shrug — every item names the section, quotes the line, explains
+why it matters to a recruiter or an ATS, and gives you replacement text to paste in.
 
 ---
 
-## Project Structure
+## Stack
 
-```
-ai-cv-analyzer/
-├── backend/                   # Node.js + Express API
-│   ├── models/
-│   │   ├── User.js            # Auth0 user model
-│   │   └── CVAnalysis.js      # CV analysis result model
-│   ├── routes/
-│   │   ├── cv.js              # /api/cv/* endpoints
-│   │   └── user.js            # /api/user/me endpoint
-│   ├── middleware/
-│   │   ├── auth.js            # Auth0 JWT validation
-│   │   └── upload.js          # Multer file upload
-│   ├── services/
-│   │   ├── extractText.js     # PDF/DOCX/TXT text extraction
-│   │   └── openai.js          # OpenAI GPT-4o analysis
-│   ├── server.js              # Express entry point
-│   ├── .env.example           # Environment variable template
-│   └── package.json
-│
-└── frontend/                  # React + Vite
-    ├── src/
-    │   ├── pages/
-    │   │   ├── LandingPage.jsx        # Public home page
-    │   │   ├── Dashboard.jsx          # Upload + stats
-    │   │   ├── AnalysisResult.jsx     # Full AI report
-    │   │   ├── CVHistory.jsx          # Past analyses list
-    │   │   └── CVDetail.jsx           # Single analysis detail
-    │   ├── components/
-    │   │   ├── Navbar.jsx             # Top navigation
-    │   │   ├── ProtectedRoute.jsx     # Auth guard
-    │   │   ├── LoadingScreen.jsx      # Full-page loader
-    │   │   ├── AnalyzingProgress.jsx  # Animated analysis steps
-    │   │   └── ScoreCard.jsx          # Score display card
-    │   ├── services/
-    │   │   └── api.js                 # Axios + Auth0 token injection
-    │   ├── App.jsx                    # Router
-    │   ├── main.jsx                   # Auth0Provider + React root
-    │   └── index.css                  # Global styles
-    ├── index.html
-    ├── vite.config.js
-    ├── .env.example
-    └── package.json
-```
+| Layer | Choice |
+|---|---|
+| Frontend | React 18, Vite, React Router 6, CSS Modules |
+| Backend | Node, Express 4, Mongoose 7 |
+| Database | MongoDB (Atlas) |
+| Auth | Auth0 (Universal Login + Google) |
+| AI | Google Gemini via `@google/genai`, schema-enforced JSON |
+| Parsing | `pdf-parse` (PDF), `mammoth` (DOCX) |
 
----
-
-## Prerequisites
-
-- Node.js 18+
-- MongoDB (local or Atlas)
-- Auth0 account (free tier works)
-- OpenAI API key
-
----
-
-## Backend Setup
+## Getting started
 
 ```bash
-cd backend
-npm install
-cp .env.example .env
-# Fill in your .env values (see below)
+npm run install:all
+```
+
+Then follow **[SETUP.md](SETUP.md)** — it walks through MongoDB Atlas, Auth0
+(including enabling Google sign-in) and a Gemini API key, and tells you exactly
+which value goes in which `.env`.
+
+```bash
 npm run dev
 ```
 
-### Backend .env
+Frontend on `http://localhost:5173`, API on `http://localhost:5000`.
 
-```
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/ai-cv-analyzer
-OPENAI_API_KEY=sk-...
-AUTH0_DOMAIN=your-tenant.auth0.com
-AUTH0_AUDIENCE=https://api.ai-cv-analyzer.com
-FRONTEND_URL=http://localhost:5173
-```
+## How the analysis works
 
----
+`POST /api/cv/upload` extracts the text, runs a cheap sanity check, then asks
+Gemini for a review constrained to a JSON schema — so the response shape is
+enforced by the API rather than hoped for in the prompt.
 
-## Frontend Setup
+The core of the output is `actionItems`:
 
-```bash
-cd frontend
-npm install
-cp .env.example .env
-# Fill in your .env values
-npm run dev
+```js
+{
+  action:     'add' | 'remove' | 'modify' | 'keep',
+  section:    'Work Experience',
+  target:     '"Was responsible for deployments"',
+  reason:     'Passive phrasing with no outcome…',
+  suggestion: 'Delete this line and reuse the space for…',
+  priority:   'critical' | 'important' | 'minor'
+}
 ```
 
-### Frontend .env
+`priority` drives the traffic-light colours throughout the UI: critical is red,
+important amber, minor green.
+
+Alongside it the report carries scores (overall + ATS), strengths, weaknesses,
+missing skills, grammar fixes, section notes, a rewritten professional summary
+and before/after bullet points.
+
+## API
+
+All routes require a valid Auth0 bearer token and are scoped to the caller.
+
+| Method | Route | Notes |
+|---|---|---|
+| `GET` | `/api/health` | Public |
+| `POST` | `/api/cv/upload` | `multipart/form-data`, field `cv`. Max 5 MB. Rate limited to 10/hour |
+| `GET` | `/api/cv/history` | Latest 50, newest first |
+| `GET` | `/api/cv/stats` | Total, best, latest and previous score |
+| `GET` | `/api/cv/:id` | Full report |
+| `DELETE` | `/api/cv/:id` | |
+| `GET` | `/api/user/me` | Get-or-create profile |
+
+Accepted uploads: **PDF, DOCX, TXT**, up to 5 MB. Legacy `.doc` is rejected —
+`mammoth` cannot read it, so accepting it only produced a confusing failure later.
+Scanned/image-only PDFs have no text layer and are rejected with an explanation.
+
+## Project layout
 
 ```
-VITE_AUTH0_DOMAIN=your-tenant.auth0.com
-VITE_AUTH0_CLIENT_ID=your-auth0-client-id
-VITE_AUTH0_AUDIENCE=https://api.ai-cv-analyzer.com
-VITE_API_BASE_URL=http://localhost:5000
+backend/
+  middleware/   auth (Auth0 JWT + requireUser), upload (multer), rateLimit
+  models/       User, CVAnalysis
+  routes/       cv, user
+  services/     analyzeCV (Gemini), extractText (PDF/DOCX/TXT)
+frontend/src/
+  components/   ScoreRing, AnalyzingProgress, ActionPlan, Navbar,
+                GoogleButton, ConfirmDialog, ErrorBoundary, ProtectedRoute
+  pages/        LandingPage, Dashboard, CVHistory, AnalysisResult
+  services/     api (axios + Auth0 token interceptor)
 ```
 
----
+## Notes
 
-## Auth0 Configuration
-
-1. Create a new **Single Page Application** in Auth0 dashboard
-2. Set **Allowed Callback URLs**: `http://localhost:5173/dashboard`
-3. Set **Allowed Logout URLs**: `http://localhost:5173`
-4. Set **Allowed Web Origins**: `http://localhost:5173`
-5. Create a new **API** in Auth0:
-   - Identifier: `https://api.ai-cv-analyzer.com`
-   - This becomes your `AUTH0_AUDIENCE`
-
----
-
-## API Endpoints
-
-| Method | Path               | Auth | Description                        |
-|--------|--------------------|------|------------------------------------|
-| GET    | /api/health        | No   | Health check                       |
-| GET    | /api/user/me       | Yes  | Get/create user profile            |
-| POST   | /api/cv/upload     | Yes  | Upload & analyze CV                |
-| GET    | /api/cv/history    | Yes  | List all analyses for user         |
-| GET    | /api/cv/stats      | Yes  | Summary stats (count, best score)  |
-| GET    | /api/cv/:id        | Yes  | Get single analysis                |
-| DELETE | /api/cv/:id        | Yes  | Delete analysis (owner only)       |
-
----
-
-## Features
-
-- **Landing page** — hero, features, how it works, CTA
-- **Auth0 authentication** — login, signup, protected routes
-- **CV upload** — PDF, DOCX, TXT up to 5MB
-- **AI analysis** — GPT-4o returns structured JSON report
-- **Animated progress** — 5-step checkpoint animation during analysis
-- **Detailed results** — scores, strengths, weaknesses, grammar issues, missing skills, bullet rewrites, improved summary, action plan
-- **CV history** — full history with delete support
-- **Dashboard stats** — total analyzed, best score, latest score
-- **Toast notifications** — success/error feedback
-- **Rate limiting** — 100 req/15min general, 10 uploads/hour per IP
-- **Security** — helmet, CORS, JWT validation, user isolation
-
----
-
-## Tech Stack
-
-| Layer      | Technology                        |
-|------------|-----------------------------------|
-| Frontend   | React 18, Vite, React Router 6    |
-| Auth       | Auth0 (auth0-react)               |
-| HTTP       | Axios                             |
-| Backend    | Node.js, Express                  |
-| Database   | MongoDB, Mongoose                 |
-| File upload| Multer                            |
-| CV parsing | pdf-parse, mammoth                |
-| AI         | OpenAI GPT-4o (json_object mode)  |
-| Styling    | CSS Modules + Google Fonts        |
+- **Auth fails closed.** If `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` are missing the server
+  throws on boot in production and 401s every request in development. It never
+  falls through unauthenticated.
+- **Uploaded files are deleted** as soon as the text is extracted. The first 10k
+  characters of extracted text are stored with the analysis.
+- **Costs.** Gemini has a free tier, but limits are per-project — check yours at
+  <https://aistudio.google.com/rate-limit>.
