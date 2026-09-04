@@ -1,26 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const checkJwt = require('../middleware/auth');
+const { requireUser } = require('../middleware/auth');
 const User = require('../models/User');
 
-// GET /api/user/me — get or create user profile
-router.get('/me', checkJwt, async (req, res) => {
-  try {
-    const auth0Id = req.auth?.payload?.sub;
-    let user = await User.findOne({ auth0Id });
+router.use(checkJwt, requireUser);
 
-    if (!user) {
-      const payload = req.auth?.payload;
-      user = await User.create({
-        auth0Id,
-        email: payload?.email || '',
-        name: payload?.name || payload?.nickname || ''
-      });
-    }
+// GET /api/user/me — get or create the caller's profile
+router.get('/me', async (req, res, next) => {
+  try {
+    const payload = req.auth?.payload || {};
+
+    const user = await User.findOneAndUpdate(
+      { auth0Id: req.auth0Id },
+      {
+        $setOnInsert: { auth0Id: req.auth0Id },
+        $set: {
+          email: payload.email || '',
+          name: payload.name || payload.nickname || '',
+          picture: payload.picture || ''
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     res.json({ user });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch user profile.' });
+    next(err);
   }
 });
 

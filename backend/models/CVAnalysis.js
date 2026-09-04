@@ -16,6 +16,16 @@ const bulletPointSchema = new mongoose.Schema({
   improved: String
 }, { _id: false });
 
+/** The add / remove / modify / keep debrief. `priority` drives the traffic-light UI. */
+const actionItemSchema = new mongoose.Schema({
+  action: { type: String, enum: ['add', 'remove', 'modify', 'keep'], required: true },
+  section: String,
+  target: String,
+  reason: String,
+  suggestion: String,
+  priority: { type: String, enum: ['critical', 'important', 'minor'], default: 'important' }
+}, { _id: false });
+
 const cvAnalysisSchema = new mongoose.Schema(
   {
     auth0Id: { type: String, required: true, index: true },
@@ -30,6 +40,7 @@ const cvAnalysisSchema = new mongoose.Schema(
     weaknesses: [String],
     grammarIssues: [grammarIssueSchema],
     missingSkills: [String],
+    actionItems: [actionItemSchema],
     recommendedImprovements: [improvementSchema],
     improvedSummary: String,
     improvedBulletPoints: [bulletPointSchema],
@@ -42,10 +53,18 @@ const cvAnalysisSchema = new mongoose.Schema(
     },
     errorMessage: String
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    // Without these the scoreLabel virtual below never reaches the client.
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
-// Virtual for score label
+// /history filters by auth0Id and sorts by createdAt; a compound index keeps
+// that a single index scan instead of an in-memory sort.
+cvAnalysisSchema.index({ auth0Id: 1, createdAt: -1 });
+
 cvAnalysisSchema.virtual('scoreLabel').get(function () {
   if (this.overallScore >= 75) return 'Excellent';
   if (this.overallScore >= 55) return 'Good';

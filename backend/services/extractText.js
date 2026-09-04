@@ -1,62 +1,78 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs/promises');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
- * Extract plain text from a CV file.
- * Supports PDF, DOCX, and TXT.
+ * Pull plain text out of an uploaded CV.
+ * All reads are async -- these used to be readFileSync inside an async handler,
+ * which blocked the event loop for the whole read.
+ *
+ * @param {string} filePath
+ * @param {'pdf'|'docx'|'txt'} fileType
+ * @returns {Promise<string>}
  */
 async function extractText(filePath, fileType) {
-  const ext = fileType || path.extname(filePath).toLowerCase().replace('.', '');
-
   try {
-    if (ext === 'pdf') {
-      const buffer = fs.readFileSync(filePath);
+    if (fileType === 'pdf') {
+      const buffer = await fs.readFile(filePath);
       const data = await pdfParse(buffer);
       return data.text.trim();
     }
 
-    if (ext === 'docx' || ext === 'doc') {
+    if (fileType === 'docx') {
       const result = await mammoth.extractRawText({ path: filePath });
       return result.value.trim();
     }
 
-    if (ext === 'txt') {
-      return fs.readFileSync(filePath, 'utf-8').trim();
+    if (fileType === 'txt') {
+      const text = await fs.readFile(filePath, 'utf-8');
+      return text.trim();
     }
 
-    throw new Error(`Unsupported file type: ${ext}`);
+    throw new Error(`Unsupported file type: ${fileType}`);
   } catch (err) {
     throw new Error(`Failed to extract text from file: ${err.message}`);
   }
 }
 
+const CV_KEYWORDS = [
+  'experience', 'education', 'skills', 'work', 'university', 'degree', 'email',
+  'phone', 'project', 'engineer', 'developer', 'manager', 'analyst', 'intern',
+  'summary', 'objective', 'certification', 'languages', 'employment', 'career',
+  'bachelor', 'master', 'diploma', 'portfolio', 'reference', 'achievements'
+];
+
+const MIN_CHARS = 100;
+const MAX_CHARS = 50000;
+
 /**
- * Basic validation that extracted text looks like a CV.
- * Checks minimum length and presence of common CV keywords.
+ * Cheap sanity gate before spending an AI call on the text.
+ * @returns {{valid: boolean, reason?: string}}
  */
 function validateCVText(text) {
-  if (!text || text.length < 100) {
-    return { valid: false, reason: 'The document appears to be empty or too short to be a CV.' };
-  }
-
-  if (text.length > 50000) {
-    return { valid: false, reason: 'The document is too long. Please upload a standard 1-3 page CV.' };
-  }
-
-  // Check for some common CV-related terms (case-insensitive)
-  const cvKeywords = ['experience', 'education', 'skills', 'work', 'university', 'degree',
-    'email', 'phone', 'project', 'engineer', 'developer', 'manager', 'analyst',
-    'intern', 'summary', 'objective', 'certification', 'languages'];
-
-  const textLower = text.toLowerCase();
-  const found = cvKeywords.filter(k => textLower.includes(k));
-
-  if (found.length < 2) {
+  if (!text || text.length < MIN_CHARS) {
     return {
       valid: false,
-      reason: 'The document does not appear to be a CV or resume. Please upload a valid CV file.'
+      reason:
+        'This file appears to be empty or too short to be a CV. If it is a scanned ' +
+        'PDF, the text cannot be read — export a text-based PDF and try again.'
+    };
+  }
+
+  if (text.length > MAX_CHARS) {
+    return {
+      valid: false,
+      reason: 'This document is too long. A standard CV is 1-3 pages.'
+    };
+  }
+
+  const lower = text.toLowerCase();
+  const hits = CV_KEYWORDS.filter((kw) => lower.includes(kw)).length;
+
+  if (hits < 3) {
+    return {
+      valid: false,
+      reason: 'This does not appear to be a CV or resume. Please upload your CV.'
     };
   }
 
