@@ -113,7 +113,21 @@ VITE_AUTH0_AUDIENCE=https://api.ai-cv-analyzer.com
 
 ---
 
-## 4. Run it
+## 4. Check your setup
+
+Before starting the app, run:
+
+```bash
+npm run doctor
+```
+
+It reads both `.env` files and actually contacts each service — connects to your
+Atlas cluster, fetches your Auth0 tenant's OpenID config, and makes one real
+Gemini call — then tells you exactly what is wrong and where to fix it. It also
+catches the audience mismatch between frontend and backend, which is the single
+most common cause of "everything 401s".
+
+## 5. Run it
 
 ```bash
 npm run dev
@@ -137,6 +151,8 @@ loaded and the server is refusing to protect the route — check `backend/.env`.
 ---
 
 ## Troubleshooting
+
+Run `npm run doctor` first — it diagnoses most of the table below automatically.
 
 | Symptom | Cause |
 |---|---|

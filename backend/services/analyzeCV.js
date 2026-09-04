@@ -109,6 +109,28 @@ ${cvText}
 Analyse the CV inside <cv_text> and return the structured review.`;
 }
 
+/**
+ * The SDK's err.message is opaque ("400 API error occurred: {...}"); the real
+ * reason sits in err.body as a JSON string. Pull it out so both users and the
+ * doctor script get something actionable.
+ */
+function describeApiError(err) {
+  const status = err?.status ?? err?.statusCode;
+  let reason = '';
+  let message = '';
+
+  try {
+    const parsed = JSON.parse(err?.body ?? 'null');
+    const detail = Array.isArray(parsed) ? parsed[0]?.error : parsed?.error;
+    message = detail?.message || '';
+    reason = detail?.details?.find((d) => d.reason)?.reason || detail?.status || '';
+  } catch {
+    // body was absent or not JSON; fall through to the generic message
+  }
+
+  return { status, reason, message: message || err?.message || 'unknown error' };
+}
+
 function clampScore(value, field) {
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) {
@@ -150,10 +172,19 @@ async function analyzeCV(cvText) {
       }
     });
   } catch (err) {
-    if (err?.status === 429 || /quota|rate limit/i.test(err?.message || '')) {
+    const { status, reason, message } = describeApiError(err);
+
+    if (status === 429 || /RESOURCE_EXHAUSTED|quota|rate limit/i.test(`${reason} ${message}`)) {
       throw new Error('The AI service is rate limited right now. Please try again in a minute.');
     }
-    throw new Error(`Could not reach the AI service: ${err?.message || 'unknown error'}`);
+    if (reason === 'API_KEY_INVALID' || /API key not valid/i.test(message)) {
+      throw new Error('The AI service rejected our API key. The server is misconfigured.');
+    }
+    if (status === 404 || /NOT_FOUND/i.test(reason)) {
+      throw new Error('The configured AI model is unavailable. The server is misconfigured.');
+    }
+
+    throw new Error(`Could not reach the AI service: ${message}`);
   }
 
   // 'incomplete' means the model hit an output limit mid-JSON. Say so plainly
@@ -214,4 +245,4 @@ async function analyzeCV(cvText) {
   };
 }
 
-module.exports = { analyzeCV, ANALYSIS_SCHEMA, MODEL };
+module.exports = { analyzeCV, ANALYSIS_SCHEMA, MODEL, describeApiError };

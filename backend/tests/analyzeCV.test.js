@@ -22,7 +22,7 @@ genai.GoogleGenAI = class {
 
 const analyzePath = require.resolve('../services/analyzeCV');
 delete require.cache[analyzePath];
-const { analyzeCV, ANALYSIS_SCHEMA } = require(analyzePath);
+const { analyzeCV, ANALYSIS_SCHEMA, describeApiError } = require(analyzePath);
 
 const VALID = {
   overallScore: 62.7,
@@ -131,6 +131,74 @@ test('error messages are not double-wrapped', async () => {
   nextResponse = new Error('socket hang up');
   await assert.rejects(() => analyzeCV('cv'), (e) => {
     assert.doesNotMatch(e.message, /(failed:.*){2}/);
+    return true;
+  });
+});
+
+// The SDK reports "400 API error occurred: {...}" and hides the real reason in
+// err.body, which is useless to both users and the doctor script.
+function sdkError(status, body) {
+  const err = new Error(`${status} API error occurred: {"httpMeta":{}}`);
+  err.status = status;
+  err.body = JSON.stringify(body);
+  return err;
+}
+
+test('describeApiError digs the real reason out of err.body', () => {
+  const err = sdkError(400, [{ error: {
+    code: 400,
+    message: 'API key not valid. Please pass a valid API key.',
+    status: 'INVALID_ARGUMENT',
+    details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }]
+  } }]);
+
+  const d = describeApiError(err);
+  assert.equal(d.status, 400);
+  assert.equal(d.reason, 'API_KEY_INVALID');
+  assert.match(d.message, /API key not valid/);
+});
+
+test('describeApiError survives a missing or non-JSON body', () => {
+  const bare = new Error('socket hang up');
+  assert.equal(describeApiError(bare).message, 'socket hang up');
+
+  const junk = new Error('boom');
+  junk.body = 'not json';
+  assert.equal(describeApiError(junk).message, 'boom');
+});
+
+test('an invalid API key is reported as misconfiguration, not a user error', async () => {
+  nextResponse = sdkError(400, [{ error: {
+    message: 'API key not valid. Please pass a valid API key.',
+    details: [{ reason: 'API_KEY_INVALID' }]
+  } }]);
+
+  await assert.rejects(() => analyzeCV('cv'), /rejected our API key/i);
+});
+
+test('an exhausted quota is reported as rate limiting', async () => {
+  nextResponse = sdkError(429, [{ error: {
+    message: 'Quota exceeded', details: [{ reason: 'RESOURCE_EXHAUSTED' }]
+  } }]);
+
+  await assert.rejects(() => analyzeCV('cv'), /rate limited/i);
+});
+
+test('an unavailable model is reported as misconfiguration', async () => {
+  nextResponse = sdkError(404, [{ error: {
+    message: 'models/gemini-x is not found', status: 'NOT_FOUND'
+  } }]);
+
+  await assert.rejects(() => analyzeCV('cv'), /model is unavailable/i);
+});
+
+test('the opaque SDK message never reaches the user verbatim', async () => {
+  nextResponse = sdkError(400, [{ error: {
+    message: 'API key not valid.', details: [{ reason: 'API_KEY_INVALID' }]
+  } }]);
+
+  await assert.rejects(() => analyzeCV('cv'), (e) => {
+    assert.doesNotMatch(e.message, /httpMeta/);
     return true;
   });
 });

@@ -8,7 +8,8 @@
     "build": "npm --prefix frontend run build",
     "start": "npm --prefix backend start",
     "test": "npm --prefix backend test",
-    "verify": "npm --prefix backend test && npm --prefix frontend run build"
+    "verify": "npm --prefix backend test && npm --prefix frontend run build",
+    "doctor": "npm --prefix backend run doctor"
   },
   "devDependencies": {
     "concurrently": "^8.0.1"

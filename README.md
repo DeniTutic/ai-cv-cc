@@ -30,10 +30,21 @@ Then follow **[SETUP.md](SETUP.md)** — it walks through MongoDB Atlas, Auth0
 which value goes in which `.env`.
 
 ```bash
+npm run doctor   # verifies every .env value against the live services
 npm run dev
 ```
 
 Frontend on `http://localhost:5173`, API on `http://localhost:5000`.
+
+## Scripts
+
+| Command | Does |
+|---|---|
+| `npm run install:all` | Installs root, backend and frontend deps |
+| `npm run doctor` | Checks both `.env` files against the live services |
+| `npm run dev` | Backend and frontend together |
+| `npm test` | Backend test suite (54 tests) |
+| `npm run verify` | Tests plus a production frontend build |
 
 ## How the analysis works
 
