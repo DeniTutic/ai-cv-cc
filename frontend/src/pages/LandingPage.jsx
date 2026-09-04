@@ -1,101 +1,109 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
+import GoogleButton from '../components/GoogleButton';
 import styles from './LandingPage.module.css';
 
-const FEATURES = [
-  { icon: '📊', title: 'CV Score & ATS Rating', desc: 'Understand exactly how recruiters and automated systems will evaluate your resume.' },
-  { icon: '🎯', title: 'Skills Gap Analysis', desc: 'Discover which skills are missing from your CV based on your target role and industry.' },
-  { icon: '✍️', title: 'Bullet Point Rewrites', desc: 'Get AI-rewritten bullet points that are results-oriented and metrics-driven.' },
-  { icon: '✅', title: 'Grammar & Tone Check', desc: 'Catch weak phrasing, informal language, and grammar errors that cost you interviews.' },
-  { icon: '📝', title: 'Improved Summary', desc: 'Receive a professionally rewritten professional summary tailored to your experience.' },
-  { icon: '🗺️', title: 'Clear Action Plan', desc: 'Get a prioritized list of exactly what to fix, in what order, to maximise your score.' }
+const PILLARS = [
+  {
+    tone: 'stop',
+    symbol: '−',
+    title: 'Remove',
+    body: 'The lines quietly costing you interviews — filler, outdated roles, red flags a recruiter reads in six seconds.'
+  },
+  {
+    tone: 'caution',
+    symbol: '~',
+    title: 'Modify',
+    body: 'Weak bullet points rewritten with action verbs and measurable results, ready to paste straight in.'
+  },
+  {
+    tone: 'go',
+    symbol: '+',
+    title: 'Add',
+    body: 'The skills, keywords and sections your target roles expect — and that the ATS is scanning for.'
+  }
 ];
 
 const STEPS = [
-  { n: '01', title: 'Upload your CV', desc: 'PDF, DOCX, or TXT — any format works.' },
-  { n: '02', title: 'AI analysis', desc: 'GPT-4 reviews it like a senior recruiter.' },
-  { n: '03', title: 'Detailed report', desc: 'Scores, issues, rewrites, action plan.' },
-  { n: '04', title: 'Re-upload anytime', desc: 'Track your improvement over time.' }
+  { n: '01', title: 'Upload', body: 'Drop in a PDF, DOCX or TXT. Nothing to install.' },
+  { n: '02', title: 'Analyse', body: 'Scored against recruiter expectations and ATS parsing rules.' },
+  { n: '03', title: 'Act', body: 'A prioritised list of changes, most critical first.' },
+  { n: '04', title: 'Track', body: 'Re-upload after editing and watch the score move.' }
 ];
 
 export default function LandingPage() {
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const { isAuthenticated, loginWithRedirect } = useAuth0();
   const navigate = useNavigate();
 
-  const handleGetStarted = () => {
-    if (isAuthenticated) navigate('/dashboard');
-    else loginWithRedirect({ appState: { returnTo: '/dashboard' } });
-  };
-
-  const handleSignUp = () => {
-    loginWithRedirect({
-      authorizationParams: { screen_hint: 'signup' },
-      appState: { returnTo: '/dashboard' }
-    });
-  };
+  function getStarted() {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      loginWithRedirect({
+        appState: { returnTo: '/dashboard' },
+        authorizationParams: { screen_hint: 'signup' }
+      });
+    }
+  }
 
   return (
-    <main className={styles.main}>
-      {/* Hero */}
+    <div className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.eyebrow}>✦ AI-powered career coaching</div>
-        <h1 className={styles.heroTitle}>
-          Get your CV <em>hired</em>,<br />not filtered
+        <span className={styles.eyebrow}>AI CV analysis</span>
+
+        <h1 className={styles.title}>
+          Know exactly what to
+          <span className={styles.stop}> remove</span>,
+          <span className={styles.caution}> change</span> and
+          <span className={styles.go}> add</span>.
         </h1>
-        <p className={styles.heroSub}>
-          Upload your resume and receive a professional AI report on structure,
-          ATS compatibility, grammar, missing skills, and exactly how to improve it.
+
+        <p className={styles.lede}>
+          Upload your CV and get a specific, prioritised action plan — not vague advice.
+          Every item tells you what to do, where, and why it matters.
         </p>
-        <div className={styles.heroBtns}>
-          <button className={styles.btnPrimary} onClick={handleGetStarted}>
-            Analyze my CV free →
+
+        <div className={styles.ctaRow}>
+          <button className={styles.ctaPrimary} onClick={getStarted}>
+            Analyse my CV — free
           </button>
-          <button className={styles.btnSecondary} onClick={() => document.getElementById('how').scrollIntoView({ behavior: 'smooth' })}>
-            See how it works
-          </button>
+          {!isAuthenticated && <GoogleButton />}
         </div>
-        <p className={styles.heroNote}>No credit card required · Results in under 60 seconds</p>
+
+        <p className={styles.microcopy}>No credit card. Results in under a minute.</p>
       </section>
 
-      {/* Feature grid */}
-      <section className={styles.featuresSection}>
-        <div className={styles.sectionLabel}>What you get</div>
-        <h2 className={styles.sectionTitle}>Everything a recruiter looks for</h2>
-        <div className={styles.featGrid}>
-          {FEATURES.map(f => (
-            <div key={f.title} className={styles.featCard}>
-              <div className={styles.featIcon}>{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-            </div>
+      <section className={styles.pillars} aria-label="What you get">
+        {PILLARS.map((p) => (
+          <article key={p.title} className={styles.pillar} data-tone={p.tone}>
+            <span className={styles.pillarSymbol} data-tone={p.tone} aria-hidden="true">
+              {p.symbol}
+            </span>
+            <h2 className={styles.pillarTitle}>{p.title}</h2>
+            <p className={styles.pillarBody}>{p.body}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.steps} aria-labelledby="how-heading">
+        <h2 id="how-heading" className={styles.sectionHeading}>How it works</h2>
+        <ol className={styles.stepGrid}>
+          {STEPS.map((s) => (
+            <li key={s.n} className={styles.step}>
+              <span className={styles.stepNum}>{s.n}</span>
+              <h3 className={styles.stepTitle}>{s.title}</h3>
+              <p className={styles.stepBody}>{s.body}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
-      {/* How it works */}
-      <section className={styles.howSection} id="how">
-        <div className={styles.sectionLabel}>How it works</div>
-        <h2 className={styles.sectionTitle}>From upload to improvement in minutes</h2>
-        <div className={styles.stepsGrid}>
-          {STEPS.map(s => (
-            <div key={s.n} className={styles.stepCard}>
-              <div className={styles.stepNum}>{s.n}</div>
-              <h3>{s.title}</h3>
-              <p>{s.desc}</p>
-            </div>
-          ))}
-        </div>
+      <section className={styles.finalCta}>
+        <h2 className={styles.finalTitle}>Your CV gets six seconds. Make them count.</h2>
+        <button className={styles.ctaLight} onClick={getStarted}>
+          Get my action plan
+        </button>
       </section>
-
-      {/* CTA */}
-      <section className={styles.ctaSection}>
-        <h2>Ready to land more interviews?</h2>
-        <p>Join thousands of professionals who improved their CV with AI feedback.</p>
-        <div className={styles.ctaBtns}>
-          <button className={styles.btnPrimary} onClick={handleGetStarted}>Get started free</button>
-          <button className={styles.btnSecondary} onClick={handleSignUp}>Create account</button>
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }

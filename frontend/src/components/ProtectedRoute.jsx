@@ -1,16 +1,24 @@
+import { useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { Navigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import LoadingScreen from './LoadingScreen';
 
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const location = useLocation();
 
-  if (isLoading) return <LoadingScreen message="Authenticating..." />;
+  // In an effect, not the render body. Calling loginWithRedirect during render
+  // is a side effect that StrictMode double-invokes.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      loginWithRedirect({
+        appState: { returnTo: location.pathname + location.search }
+      });
+    }
+  }, [isLoading, isAuthenticated, loginWithRedirect, location]);
 
-  if (!isAuthenticated) {
-    loginWithRedirect({ appState: { returnTo: window.location.pathname } });
-    return <LoadingScreen message="Redirecting to login..." />;
-  }
+  if (isLoading) return <LoadingScreen message="Checking your session…" />;
+  if (!isAuthenticated) return <LoadingScreen message="Redirecting to sign in…" />;
 
   return children;
 }

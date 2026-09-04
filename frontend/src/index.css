@@ -1,52 +1,160 @@
+/* ============================================================
+   CVlens design tokens
+   ============================================================ */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent: #e94560;
-  --accent-hover: #d63050;
-  --brand: #1a1a2e;
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
+  /* --- Traffic-stop scale -------------------------------------------------
+     One source of truth. These hexes used to be duplicated across five
+     CSS modules. Contrast-checked against their tints for WCAG AA text. */
+  --stop:          #B3261E;
+  --stop-tint:     #FCEBEA;
+  --stop-border:   #F3C9C6;
+  --stop-strong:   #8C1D18;
+
+  --caution:       #8A5200;
+  --caution-tint:  #FDF2DF;
+  --caution-border:#F0DCB4;
+  --caution-strong:#6B3F00;
+
+  --go:            #2E6B14;
+  --go-tint:       #EAF4E1;
+  --go-border:     #CBE3B8;
+  --go-strong:     #24540F;
+
+  --info:          #15599B;
+  --info-tint:     #E7F1FB;
+  --info-border:   #C4DDF4;
+
+  /* --- Brand --- */
+  --accent:        #E23E58;
+  --accent-hover:  #C42B44;
+  --accent-tint:   #FDEDF0;
+  --brand:         #14142B;
+
+  /* --- Neutral ramp (replaces the ad-hoc #333..#ddd greys) --- */
+  --ink-900: #14142B;
+  --ink-800: #2A2A3D;
+  --ink-700: #43435A;
+  --ink-600: #61617A;
+  --ink-500: #83839B;
+  --ink-400: #A8A8BC;
+  --ink-300: #CBCBD8;
+  --ink-200: #E4E4EC;
+  --ink-100: #F1F1F5;
+
+  --surface:       #FFFFFF;
+  --surface-sunk:  #FAFAF9;
+  --border:        #E7E7E2;
+  --border-strong: #D4D4CE;
+
+  /* --- Type --- */
+  --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* --- Spacing scale --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 72px;
+
+  /* --- Radii --- */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* --- Elevation --- */
+  --shadow-sm: 0 1px 2px rgba(20, 20, 43, 0.05);
+  --shadow-md: 0 2px 8px rgba(20, 20, 43, 0.06), 0 1px 2px rgba(20, 20, 43, 0.04);
+  --shadow-lg: 0 8px 28px rgba(20, 20, 43, 0.10), 0 2px 6px rgba(20, 20, 43, 0.05);
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-med: 300ms;
+  --dur-slow: 600ms;
+
+  /* --- Layout --- */
+  --page-width: 760px;
+  --page-width-wide: 1000px;
 }
 
-html { font-size: 16px; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
 body {
   font-family: var(--font-body);
-  background: #fafaf9;
-  color: #1a1a2e;
+  background: var(--surface-sunk);
+  color: var(--ink-900);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a { color: inherit; text-decoration: none; }
-button { font-family: var(--font-body); cursor: pointer; }
-input, textarea { font-family: var(--font-body); }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; }
+img, svg { display: block; max-width: 100%; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
+
+/* Visible, consistent keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--ink-300); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
 
-/* Transitions */
-* { transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
-
-/* Loading spinner */
+/* --- Shared animation primitives --- */
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinner { animation: spin 0.8s linear infinite; }
-
-/* Fade in */
+@keyframes spinReverse { to { transform: rotate(-360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-in { animation: fadeInUp .4s ease both; }
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
 
-/* Utility */
+.fade-in { animation: fadeInUp var(--dur-med) var(--ease-out) both; }
+
 .sr-only {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Skip link for keyboard users. */
+.skip-link {
+  position: absolute; left: var(--sp-4); top: -60px; z-index: 200;
+  background: var(--brand); color: #fff;
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-md);
+  transition: top var(--dur-fast) var(--ease-out);
+}
+.skip-link:focus { top: var(--sp-4); }
+
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

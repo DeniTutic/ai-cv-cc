@@ -1,83 +1,153 @@
 .wrap {
-  max-width: 420px;
+  max-width: 440px;
   margin: 0 auto;
-  padding: 72px 24px;
+  padding: var(--sp-8) var(--sp-5);
   text-align: center;
+  animation: fadeInUp var(--dur-med) var(--ease-out) both;
 }
 
-.spinnerRing {
-  width: 64px;
-  height: 64px;
-  border: 3px solid #e8e8e4;
-  border-top-color: var(--accent);
+/* ---- The circulating rings ---- */
+.orbit {
+  position: relative;
+  margin: 0 auto var(--sp-6);
+  display: grid;
+  place-items: center;
+}
+
+.orbit > * { grid-area: 1 / 1; }
+
+.ringOuter,
+.ringInner,
+.sweep {
+  position: absolute;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 28px;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-.title {
+/* Outer: a broken hairline ring rotating clockwise. */
+.ringOuter {
+  inset: -14px;
+  border: 1px dashed var(--ink-300);
+  animation: spin 14s linear infinite;
+}
+
+/* Inner: a partial arc rotating the other way, at a different rate. */
+.ringInner {
+  inset: 18px;
+  border: 2px solid transparent;
+  border-top-color: var(--ink-300);
+  border-right-color: var(--ink-200);
+  animation: spinReverse 4s linear infinite;
+}
+
+/* A soft conic sweep tinted by the current tone. */
+.sweep {
+  inset: 4px;
+  opacity: 0.5;
+  animation: spin 2.4s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+}
+.sweep[data-tone='stop']    { background: conic-gradient(from 0deg, transparent 55%, var(--stop) 100%); }
+.sweep[data-tone='caution'] { background: conic-gradient(from 0deg, transparent 55%, var(--caution) 100%); }
+.sweep[data-tone='go']      { background: conic-gradient(from 0deg, transparent 55%, var(--go) 100%); }
+
+.svg { transform: rotate(-90deg); position: relative; }
+
+.progressArc {
+  transition: stroke var(--dur-slow) var(--ease-out);
+}
+.progressArc[data-tone='stop']    { stroke: var(--stop); }
+.progressArc[data-tone='caution'] { stroke: var(--caution); }
+.progressArc[data-tone='go']      { stroke: var(--go); }
+
+.centre {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.percent {
   font-family: var(--font-display);
-  font-size: 26px;
-  letter-spacing: -0.5px;
+  font-size: 2.5rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--dur-slow) var(--ease-out);
+}
+.percent[data-tone='stop']    { color: var(--stop-strong); }
+.percent[data-tone='caution'] { color: var(--caution-strong); }
+.percent[data-tone='go']      { color: var(--go-strong); }
+
+.percentSign { font-size: 0.875rem; color: var(--ink-400); }
+
+/* ---- Copy ---- */
+.title {
+  font-size: 1.625rem;
   color: var(--brand);
-  margin-bottom: 8px;
+  margin-bottom: var(--sp-2);
 }
 
 .sub {
-  font-size: 14px;
-  color: #888;
-  font-weight: 300;
-  margin-bottom: 40px;
+  font-size: 0.875rem;
+  color: var(--ink-500);
+  margin-bottom: var(--sp-6);
+  min-height: 1.4em;
 }
 
-.checkpoints { text-align: left; }
+/* ---- Stage checklist ---- */
+.checkpoints { text-align: left; list-style: none; }
 
 .checkpoint {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0ee;
-  font-size: 14px;
-  color: #aaa;
-  transition: color .3s;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--ink-100);
+  font-size: 0.875rem;
+  color: var(--ink-400);
+  transition: color var(--dur-med) var(--ease-out);
 }
 .checkpoint:last-child { border-bottom: none; }
-
-.checkpoint.done { color: #888; }
-.checkpoint.done span { text-decoration: line-through; }
-.checkpoint.active { color: var(--brand); font-weight: 500; }
+.checkpoint[data-state='done']   { color: var(--ink-500); }
+.checkpoint[data-state='done'] .checkLabel { text-decoration: line-through; }
+.checkpoint[data-state='active'] { color: var(--brand); font-weight: 500; }
 
 .icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  border: 1.5px solid #e8e8e4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 500;
+  border: 1.5px solid var(--ink-200);
+  display: grid;
+  place-items: center;
+  font-size: 0.6875rem;
   flex-shrink: 0;
-  color: #ccc;
-  transition: all .3s;
+  color: var(--ink-300);
+  transition: background var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
 }
-
-.checkpoint.done .icon {
-  background: #3B6D11;
-  border-color: #3B6D11;
+.icon[data-state='done'] {
+  background: var(--go);
+  border-color: var(--go);
   color: #fff;
 }
-.checkpoint.active .icon {
-  border-color: var(--accent);
-}
+.icon[data-state='active'] { border-color: var(--accent); }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  animation: pulse .8s ease-in-out infinite;
+  animation: pulse 1s ease-in-out infinite;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+@media (max-width: 768px) {
+  .wrap { padding: var(--sp-7) var(--sp-4); }
+}
+
+/* Stop the infinite rotations for motion-sensitive users; the arc and the
+   number still convey progress. */
+@media (prefers-reduced-motion: reduce) {
+  .ringOuter, .ringInner, .sweep, .dot { animation: none; }
+  .sweep { opacity: 0.25; }
+}

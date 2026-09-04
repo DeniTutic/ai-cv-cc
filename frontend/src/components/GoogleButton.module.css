@@ -1,0 +1,19 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-800);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-5);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.btn:hover { border-color: var(--ink-400); box-shadow: var(--shadow-md); }
+
+.icon { width: 18px; height: 18px; flex-shrink: 0; }

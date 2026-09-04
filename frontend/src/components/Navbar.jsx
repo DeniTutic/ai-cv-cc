@@ -3,52 +3,58 @@ import { Link, useLocation } from 'react-router-dom';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
-  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
+  const { isAuthenticated, user, loginWithRedirect, logout } = useAuth0();
   const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className={styles.nav}>
-      <Link to={isAuthenticated ? '/dashboard' : '/'} className={styles.logo}>
-        <span className={styles.logoDot} aria-hidden="true" />
-        CVlens
-      </Link>
+      <div className={styles.inner}>
+        <Link to={isAuthenticated ? '/dashboard' : '/'} className={styles.brand}>
+          CVlens<span className={styles.dot} aria-hidden="true">.</span>
+        </Link>
 
-      <div className={styles.actions}>
         {isAuthenticated ? (
-          <>
-            <Link
-              to="/history"
-              className={`${styles.link} ${location.pathname === '/history' ? styles.active : ''}`}
-            >
-              History
+          <div className={styles.right}>
+            <Link to="/dashboard" className={styles.link} data-active={isActive('/dashboard')}>
+              Upload
             </Link>
-            <Link
-              to="/dashboard"
-              className={`${styles.link} ${location.pathname === '/dashboard' ? styles.active : ''}`}
-            >
-              Dashboard
+            <Link to="/history" className={styles.link} data-active={isActive('/history')}>
+              My CVs
             </Link>
-            <div className={styles.userChip}>
-              {user?.picture && <img src={user.picture} alt="" className={styles.avatar} />}
-              <span className={styles.userName}>{user?.name || user?.email}</span>
-            </div>
+
+            <span className={styles.user}>
+              {user?.picture && (
+                <img src={user.picture} alt="" className={styles.avatar} referrerPolicy="no-referrer" />
+              )}
+              <span className={styles.userName}>{user?.given_name || user?.name}</span>
+            </span>
+
             <button
-              className={styles.btnOutline}
+              className={styles.signOut}
               onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
             >
               Sign out
             </button>
-          </>
+          </div>
         ) : (
-          <>
-            <button className={styles.btnGhost} onClick={() => loginWithRedirect()}>Log in</button>
+          <div className={styles.right}>
+            <button className={styles.link} onClick={() => loginWithRedirect({ appState: { returnTo: '/dashboard' } })}>
+              Log in
+            </button>
             <button
-              className={styles.btnPrimary}
-              onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
+              className={styles.cta}
+              onClick={() =>
+                loginWithRedirect({
+                  appState: { returnTo: '/dashboard' },
+                  authorizationParams: { screen_hint: 'signup' }
+                })
+              }
             >
               Sign up free
             </button>
-          </>
+          </div>
         )}
       </div>
     </nav>

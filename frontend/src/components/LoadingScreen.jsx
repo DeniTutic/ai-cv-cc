@@ -1,10 +1,10 @@
 import styles from './LoadingScreen.module.css';
 
-export default function LoadingScreen({ message = 'Loading...' }) {
+export default function LoadingScreen({ message = 'Loading…' }) {
   return (
-    <div className={styles.wrap}>
-      <div className={styles.spinner} aria-hidden="true" />
-      <p className={styles.msg}>{message}</p>
+    <div className={styles.wrap} role="status" aria-live="polite">
+      <span className={styles.ring} aria-hidden="true" />
+      <p className={styles.message}>{message}</p>
     </div>
   );
 }

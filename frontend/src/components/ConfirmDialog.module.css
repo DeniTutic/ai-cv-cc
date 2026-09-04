@@ -1,0 +1,44 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 43, 0.45);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  z-index: 100;
+  animation: fadeInUp var(--dur-fast) var(--ease-out) both;
+}
+
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.title { font-size: 1.25rem; color: var(--brand); margin-bottom: var(--sp-2); }
+.body { font-size: 0.875rem; color: var(--ink-600); margin-bottom: var(--sp-5); }
+
+.actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+
+.cancel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  color: var(--ink-600);
+}
+.cancel:hover { color: var(--ink-900); border-color: var(--ink-400); }
+
+.confirm {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius-md);
+  background: var(--stop);
+  color: #fff;
+}
+.confirm:hover { background: var(--stop-strong); }

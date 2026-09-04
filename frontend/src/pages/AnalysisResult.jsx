@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { createApiClient, cvApi } from '../services/api';
-import ScoreCard from '../components/ScoreCard';
+import ScoreRing from '../components/ScoreRing';
+import ActionPlan from '../components/ActionPlan';
 import LoadingScreen from '../components/LoadingScreen';
 import styles from './AnalysisResult.module.css';
 
@@ -15,137 +16,167 @@ export default function AnalysisResult() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     const client = createApiClient(getAccessTokenSilently);
+
     cvApi.getOne(client, id)
-      .then(r => setAnalysis(r.data.analysis))
-      .catch(() => setError('Could not load this analysis.'))
-      .finally(() => setLoading(false));
+      .then((r) => { if (!cancelled) setAnalysis(r.data.analysis); })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(
+          err.response?.status === 404
+            ? 'This analysis could not be found.'
+            : 'Could not load this analysis.'
+        );
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
   }, [id, getAccessTokenSilently]);
 
-  if (loading) return <LoadingScreen message="Loading analysis..." />;
-  if (error) return (
-    <div className={styles.errorWrap}>
-      <p>{error}</p>
-      <button onClick={() => navigate('/dashboard')} className={styles.btn}>Back to dashboard</button>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="Loading your report…" />;
+
+  if (error) {
+    return (
+      <div className={styles.errorWrap}>
+        <p className={styles.errorText}>{error}</p>
+        <button onClick={() => navigate('/dashboard')} className={styles.btnPrimary}>
+          Back to dashboard
+        </button>
+      </div>
+    );
+  }
+
   if (!analysis) return null;
 
   const a = analysis;
+  // Every list is guarded: one incomplete record used to crash the page.
+  const strengths = a.strengths ?? [];
+  const weaknesses = a.weaknesses ?? [];
+  const missingSkills = a.missingSkills ?? [];
+  const grammarIssues = a.grammarIssues ?? [];
+  const improvements = a.recommendedImprovements ?? [];
+  const bullets = a.improvedBulletPoints ?? [];
+  const actionItems = a.actionItems ?? [];
+
+  const created = a.createdAt
+    ? new Date(a.createdAt).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      })
+    : '';
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <div className={styles.fileName}>{a.originalFileName}</div>
-          <div className={styles.date}>{new Date(a.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-        </div>
-      </div>
+      <header className={styles.header}>
+        <button className={styles.back} onClick={() => navigate('/history')}>
+          ← All CVs
+        </button>
+        <h1 className={styles.fileName}>{a.originalFileName}</h1>
+        <p className={styles.date}>Analysed {created}</p>
+      </header>
 
-      {/* Scores */}
       <div className={styles.scoreRow}>
-        <ScoreCard score={a.overallScore} label="Overall score" />
-        <ScoreCard score={a.atsScore} label="ATS compatibility" />
+        <ScoreRing score={a.overallScore} label="Overall score" />
+        <ScoreRing score={a.atsScore} label="ATS compatibility" />
       </div>
 
-      {/* Strengths */}
-      <Section icon="👍" title="Strengths">
-        <TagList items={a.strengths} variant="strength" />
-      </Section>
+      <div className={styles.finalBox}>
+        <span className={styles.finalLabel}>Where to start</span>
+        <p>{a.finalRecommendation}</p>
+      </div>
 
-      {/* Weaknesses */}
-      <Section icon="⚠️" title="Weaknesses">
-        <TagList items={a.weaknesses} variant="weakness" />
-      </Section>
+      <ActionPlan items={actionItems} />
 
-      {/* Missing skills */}
-      <Section icon="🎯" title="Missing skills">
-        <TagList items={a.missingSkills} variant="skill" />
-      </Section>
-
-      {/* Grammar issues */}
-      {a.grammarIssues?.length > 0 && (
-        <Section icon="✍️" title="Grammar & wording issues">
-          {a.grammarIssues.map((g, i) => (
-            <div key={i} className={styles.issueItem}>
-              <div className={styles.issueProblem}>⚠ {g.issue}</div>
-              <div className={styles.issueSuggestion}>→ {g.suggestion}</div>
-            </div>
-          ))}
-        </Section>
+      {(strengths.length > 0 || weaknesses.length > 0) && (
+        <div className={styles.splitGrid}>
+          {strengths.length > 0 && (
+            <Section title="Strengths" tone="go">
+              <ul className={styles.bulletList}>
+                {strengths.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </Section>
+          )}
+          {weaknesses.length > 0 && (
+            <Section title="Weaknesses" tone="stop">
+              <ul className={styles.bulletList}>
+                {weaknesses.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </Section>
+          )}
+        </div>
       )}
 
-      {/* Recommended improvements */}
-      <Section icon="📋" title="Recommended improvements">
-        {a.recommendedImprovements.map((r, i) => (
-          <div key={i} className={styles.improvItem}>
-            <div className={styles.improvSection}>{r.section}</div>
-            <div className={styles.improvProblem}>{r.problem}</div>
-            <div className={styles.improvRec}>{r.recommendation}</div>
+      {missingSkills.length > 0 && (
+        <Section title="Skills worth adding" tone="info">
+          <div className={styles.tagList}>
+            {missingSkills.map((s, i) => <span key={i} className={styles.tag}>{s}</span>)}
           </div>
-        ))}
-      </Section>
+        </Section>
+      )}
 
-      {/* Improved summary */}
-      <Section icon="👤" title="Improved professional summary">
-        <div className={styles.summaryBox}>{a.improvedSummary}</div>
-      </Section>
-
-      {/* Improved bullet points */}
-      {a.improvedBulletPoints?.length > 0 && (
-        <Section icon="🔄" title="Improved bullet points">
-          {a.improvedBulletPoints.map((b, i) => (
-            <div key={i} className={styles.bulletPair}>
-              <div className={styles.bulletLabel}>Original</div>
-              <div className={styles.bulletBefore}>{b.original}</div>
-              <div className={styles.bulletLabel}>Improved</div>
-              <div className={styles.bulletAfter}>{b.improved}</div>
+      {grammarIssues.length > 0 && (
+        <Section title="Grammar & wording" tone="caution">
+          {grammarIssues.map((g, i) => (
+            <div key={i} className={styles.issueItem}>
+              <p className={styles.issueProblem}>{g.issue}</p>
+              <p className={styles.issueSuggestion}>{g.suggestion}</p>
             </div>
           ))}
         </Section>
       )}
 
-      {/* Final recommendation */}
-      <Section icon="🏁" title="Final recommendation">
-        <div className={styles.finalBox}>{a.finalRecommendation}</div>
-      </Section>
+      {improvements.length > 0 && (
+        <Section title="Section-by-section notes">
+          {improvements.map((r, i) => (
+            <div key={i} className={styles.improvItem}>
+              <span className={styles.improvSection}>{r.section}</span>
+              <p className={styles.improvProblem}>{r.problem}</p>
+              <p className={styles.improvRec}>{r.recommendation}</p>
+            </div>
+          ))}
+        </Section>
+      )}
 
-      {/* Actions */}
+      {a.improvedSummary && (
+        <Section title="A stronger professional summary">
+          <div className={styles.summaryBox}>{a.improvedSummary}</div>
+        </Section>
+      )}
+
+      {bullets.length > 0 && (
+        <Section title="Rewritten bullet points">
+          {bullets.map((b, i) => (
+            <div key={i} className={styles.bulletPair}>
+              <div className={styles.bulletCol}>
+                <span className={styles.bulletLabel} data-tone="stop">Before</span>
+                <p className={styles.bulletBefore}>{b.original}</p>
+              </div>
+              <div className={styles.bulletCol}>
+                <span className={styles.bulletLabel} data-tone="go">After</span>
+                <p className={styles.bulletAfter}>{b.improved}</p>
+              </div>
+            </div>
+          ))}
+        </Section>
+      )}
+
       <div className={styles.actions}>
         <button className={styles.btnPrimary} onClick={() => navigate('/dashboard')}>
-          Analyze another CV
+          Analyse another CV
         </button>
         <button className={styles.btnOutline} onClick={() => navigate('/history')}>
-          View history
-        </button>
-        <button className={styles.btnOutline} onClick={() => navigate('/dashboard')}>
-          Dashboard
+          View all CVs
         </button>
       </div>
     </div>
   );
 }
 
-function Section({ icon, title, children }) {
+function Section({ title, tone, children }) {
   return (
-    <div className={styles.section}>
-      <h3 className={styles.sectionTitle}><span>{icon}</span>{title}</h3>
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle} data-tone={tone}>{title}</h2>
       {children}
-    </div>
-  );
-}
-
-function TagList({ items, variant }) {
-  const cls = {
-    strength: styles.tagStrength,
-    weakness: styles.tagWeakness,
-    skill:    styles.tagSkill
-  }[variant];
-  return (
-    <div className={styles.tagList}>
-      {items.map((item, i) => (
-        <span key={i} className={`${styles.tag} ${cls}`}>{item}</span>
-      ))}
-    </div>
+    </section>
   );
 }
