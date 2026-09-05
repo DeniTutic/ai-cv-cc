@@ -1,32 +1,34 @@
-const fs = require('fs/promises');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
  * Pull plain text out of an uploaded CV.
- * All reads are async -- these used to be readFileSync inside an async handler,
- * which blocked the event loop for the whole read.
  *
- * @param {string} filePath
+ * Takes the file's bytes rather than a path: uploads are held in memory because
+ * serverless filesystems are read-only, and all three parsers accept a buffer.
+ *
+ * @param {Buffer} buffer
  * @param {'pdf'|'docx'|'txt'} fileType
  * @returns {Promise<string>}
  */
-async function extractText(filePath, fileType) {
+async function extractText(buffer, fileType) {
+  if (!Buffer.isBuffer(buffer)) {
+    throw new Error('Failed to extract text from file: no file contents.');
+  }
+
   try {
     if (fileType === 'pdf') {
-      const buffer = await fs.readFile(filePath);
       const data = await pdfParse(buffer);
       return data.text.trim();
     }
 
     if (fileType === 'docx') {
-      const result = await mammoth.extractRawText({ path: filePath });
+      const result = await mammoth.extractRawText({ buffer });
       return result.value.trim();
     }
 
     if (fileType === 'txt') {
-      const text = await fs.readFile(filePath, 'utf-8');
-      return text.trim();
+      return buffer.toString('utf-8').trim();
     }
 
     throw new Error(`Unsupported file type: ${fileType}`);

@@ -1,11 +1,12 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-const uploadDir = path.join(__dirname, '../uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const MAX_BYTES = 5 * 1024 * 1024;
+/**
+ * Vercel functions reject request bodies over 4.5 MB with a platform-level 413,
+ * and multipart encoding overhead counts toward that. 4 MB leaves headroom and
+ * keeps the rejection ours, with a message we control.
+ */
+const MAX_BYTES = 4 * 1024 * 1024;
 
 // .doc is deliberately absent: mammoth reads OOXML only, so accepting legacy
 // binary Word here just produced a confusing 422 later. Reject it up front.
@@ -14,17 +15,6 @@ const ACCEPTED = {
   '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   '.txt': ['text/plain']
 };
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    // Derive the extension from our own allow-list rather than from the
-    // client-supplied name, so nothing arbitrary lands on disk.
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExt = Object.keys(ACCEPTED).includes(ext) ? ext : '.bin';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  }
-});
 
 function fileFilter(req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
@@ -39,8 +29,12 @@ function fileFilter(req, file, cb) {
   cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'cv'));
 }
 
+// Memory, not disk: serverless filesystems are read-only apart from /tmp, and
+// holding a <=4 MB buffer removes the temp-file lifecycle entirely.
 module.exports = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: MAX_BYTES, files: 1 }
 });
+
+module.exports.MAX_BYTES = MAX_BYTES;

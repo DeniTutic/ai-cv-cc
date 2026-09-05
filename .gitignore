@@ -11,8 +11,6 @@ dist/
 build/
 
 # Uploads (transient CV files)
-backend/uploads/*
-!backend/uploads/.gitkeep
 
 # OS / editor
 .DS_Store

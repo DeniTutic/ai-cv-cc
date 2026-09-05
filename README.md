@@ -43,7 +43,7 @@ Frontend on `http://localhost:5173`, API on `http://localhost:5000`.
 | `npm run install:all` | Installs root, backend and frontend deps |
 | `npm run doctor` | Checks both `.env` files against the live services |
 | `npm run dev` | Backend and frontend together |
-| `npm test` | Backend test suite (54 tests) |
+| `npm test` | Backend test suite (70 tests) |
 | `npm run verify` | Tests plus a production frontend build |
 
 ## How the analysis works
@@ -79,14 +79,14 @@ All routes require a valid Auth0 bearer token and are scoped to the caller.
 | Method | Route | Notes |
 |---|---|---|
 | `GET` | `/api/health` | Public |
-| `POST` | `/api/cv/upload` | `multipart/form-data`, field `cv`. Max 5 MB. Rate limited to 10/hour |
+| `POST` | `/api/cv/upload` | `multipart/form-data`, field `cv`. Max 4 MB. Rate limited to 10/hour |
 | `GET` | `/api/cv/history` | Latest 50, newest first |
 | `GET` | `/api/cv/stats` | Total, best, latest and previous score |
 | `GET` | `/api/cv/:id` | Full report |
 | `DELETE` | `/api/cv/:id` | |
 | `GET` | `/api/user/me` | Get-or-create profile |
 
-Accepted uploads: **PDF, DOCX, TXT**, up to 5 MB. Legacy `.doc` is rejected —
+Accepted uploads: **PDF, DOCX, TXT**, up to 4 MB (Vercel rejects request bodies over 4.5 MB at the platform level). Legacy `.doc` is rejected —
 `mammoth` cannot read it, so accepting it only produced a confusing failure later.
 Scanned/image-only PDFs have no text layer and are rejected with an explanation.
 
@@ -97,7 +97,10 @@ backend/
   middleware/   auth (Auth0 JWT + requireUser), upload (multer), rateLimit
   models/       User, CVAnalysis
   routes/       cv, user
-  services/     analyzeCV (Gemini), extractText (PDF/DOCX/TXT)
+  services/     analyzeCV (Gemini), extractText (PDF/DOCX/TXT, from a buffer)
+  app.js        the Express app, no side effects
+  server.js     local bootstrap (npm run dev)
+  api/index.js  Vercel serverless entry, caches the Mongo connection
 frontend/src/
   components/   ScoreRing, AnalyzingProgress, ActionPlan, Navbar,
                 GoogleButton, ConfirmDialog, ErrorBoundary, ProtectedRoute
@@ -110,7 +113,12 @@ frontend/src/
 - **Auth fails closed.** If `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` are missing the server
   throws on boot in production and 401s every request in development. It never
   falls through unauthenticated.
-- **Uploaded files are deleted** as soon as the text is extracted. The first 10k
-  characters of extracted text are stored with the analysis.
+- **Uploaded files never touch disk.** They are held in memory only for as long
+  as it takes to extract the text; the first 10k characters are stored with the
+  analysis. Serverless filesystems are read-only, and this removes the temp-file
+  lifecycle entirely.
+- **Rate limiting is per-instance on serverless.** `express-rate-limit` uses an
+  in-memory store, so each warm function instance counts separately and the
+  10-uploads/hour limit is not global. A shared store (Redis) is the real fix.
 - **Costs.** Gemini has a free tier, but limits are per-project — check yours at
   <https://aistudio.google.com/rate-limit>.

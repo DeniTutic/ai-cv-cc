@@ -169,17 +169,20 @@ Run `npm run doctor` first — it diagnoses most of the table below automaticall
 
 ## 6. Deploying
 
-The backend and frontend deploy to different platforms, because the upload route
-holds a request open for 15-40s while Gemini works — longer than a serverless
-function should run.
+Both halves deploy to Vercel, as two projects from the same repo. The upload
+route holds a request open for 15-40s while Gemini works, which fits comfortably
+inside Vercel Hobby's 300-second function limit.
 
-### Backend → Railway
+### Backend → Vercel
 
-`railway.json` at the repo root already sets the build and start commands and
-points the healthcheck at `/api/health`. In the Railway dashboard:
+The backend is a **separate Vercel project from the same repo**, with root
+directory `backend`. `backend/vercel.json` routes every request into
+`api/index.js` and sets `maxDuration` to 300s — the Hobby ceiling, and far more
+than the 15-40s a Gemini analysis takes.
 
-1. **New Project → Deploy from GitHub repo →** `DeniTutic/ai-cv-cc`.
-2. **Variables** — add these:
+1. **Add New → Project →** `DeniTutic/ai-cv-cc`.
+2. Set **Root Directory** to `backend`.
+3. Add the environment variables:
 
    | Key | Value |
    |---|---|
@@ -189,14 +192,30 @@ points the healthcheck at `/api/health`. In the Railway dashboard:
    | `GEMINI_MODEL` | `gemini-2.5-flash` |
    | `AUTH0_DOMAIN` | your tenant |
    | `AUTH0_AUDIENCE` | your API identifier |
-   | `FRONTEND_URL` | your Vercel URL (set after the frontend deploys) |
+   | `FRONTEND_URL` | your frontend Vercel URL |
    | `VERCEL_PREVIEW_SUFFIX` | `.vercel.app` — lets preview deploys call the API |
-
-   Do **not** set `PORT`; Railway injects it.
-3. **Settings → Networking → Generate Domain.** Copy that URL.
 
 `FRONTEND_URL` accepts a comma-separated list, so you can keep
 `http://localhost:5173` in it while developing against the deployed API.
+
+**Uploads are capped at 4 MB**, because Vercel rejects request bodies over 4.5 MB
+at the platform level. The frontend enforces the same number before sending.
+
+**Rate limiting caveat:** `express-rate-limit` keeps its counters in memory, so on
+serverless each warm instance counts separately and the 10-uploads/hour limit is
+per-instance rather than global. It still stops one user hammering one instance.
+A shared store (Redis/Upstash) is the real fix if this ever matters.
+
+<details>
+<summary>Alternative: Railway (paid)</summary>
+
+`railway.json` at the repo root is kept and still works — Nixpacks build,
+`npm --prefix backend start`, healthcheck on `/api/health`. Railway needs a paid
+plan, but it runs the app as a long-lived server, which avoids the 4 MB body cap
+and gives working global rate limiting. Same environment variables, minus
+`PORT` (Railway injects it).
+
+</details>
 
 ### Frontend → Vercel
 
@@ -221,6 +240,6 @@ Add the Vercel URL to **Allowed Callback URLs**, **Allowed Logout URLs** and
 
 ### Order
 
-Deploy the frontend first to learn its URL, set `FRONTEND_URL` on Railway, then
-set `VITE_API_BASE_URL` on Vercel and redeploy. The two reference each other, so
-one redeploy each is unavoidable.
+Deploy the frontend first to learn its URL, set `FRONTEND_URL` on the backend
+project, then set `VITE_API_BASE_URL` on the frontend project and redeploy. The
+two reference each other, so one redeploy each is unavoidable.

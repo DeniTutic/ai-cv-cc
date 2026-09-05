@@ -33,8 +33,12 @@ function buildCorsOrigin() {
 /**
  * The Express app, with no side effects: no DB connection, no listen.
  * server.js owns the bootstrap so tests can import the app directly.
+ *
+ * @param {object}   [options]
+ * @param {boolean}  [options.rateLimit]    disable to stop a test suite tripping the limiter
+ * @param {Function} [options.beforeRoutes] middleware run after parsing, before any route
  */
-function createApp({ rateLimit = true } = {}) {
+function createApp({ rateLimit = true, beforeRoutes } = {}) {
   const app = express();
 
   app.use(helmet());
@@ -46,9 +50,17 @@ function createApp({ rateLimit = true } = {}) {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 
+  // Deliberately registered ahead of the beforeRoutes gate: the health check
+  // reports that the process is serving, so a platform probe stays green during
+  // a database blip and never costs a connection.
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Everything below runs only after this resolves. The serverless entry uses it
+  // to await the cached database connection; registering it after the routes
+  // would be too late, since Express runs middleware in registration order.
+  if (beforeRoutes) app.use(beforeRoutes);
 
   app.use('/api/cv', cvRoutes);
   app.use('/api/user', userRoutes);
@@ -61,7 +73,7 @@ function createApp({ rateLimit = true } = {}) {
   app.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ error: 'File is too large. Maximum size is 5 MB.' });
+        return res.status(413).json({ error: 'File is too large. Maximum size is 4 MB.' });
       }
       return res.status(400).json({ error: 'Upload rejected. Send a single file in the "cv" field.' });
     }

@@ -6,7 +6,9 @@ import { createApiClient, cvApi, apiErrorMessage } from '../services/api';
 import AnalyzingProgress from '../components/AnalyzingProgress';
 import styles from './Dashboard.module.css';
 
-const MAX_BYTES = 5 * 1024 * 1024;
+// Vercel rejects request bodies over 4.5 MB at the platform level, so we cap
+// below that and reject here, where we can show a real message.
+const MAX_BYTES = 4 * 1024 * 1024;
 const ACCEPTED_EXTS = ['.pdf', '.docx', '.txt'];
 
 export default function Dashboard() {
@@ -46,7 +48,7 @@ export default function Dashboard() {
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error('File is too large. Maximum size is 5 MB.');
+      toast.error('File is too large. Maximum size is 4 MB.');
       return;
     }
 
@@ -130,7 +132,7 @@ export default function Dashboard() {
 
       <section className={styles.uploadCard}>
         <h2 className={styles.uploadTitle}>Upload your CV</h2>
-        <p className={styles.uploadSub}>PDF, DOCX or TXT — up to 5 MB.</p>
+        <p className={styles.uploadSub}>PDF, DOCX or TXT — up to 4 MB.</p>
 
         <div
           className={styles.dropZone}

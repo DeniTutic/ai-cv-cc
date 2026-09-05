@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const mongoose = require('mongoose');
 const router = express.Router();
 
@@ -49,8 +48,6 @@ async function upsertUser(req) {
 
 // POST /api/cv/upload
 router.post('/upload', uploadLimiter, upload.single('cv'), async (req, res, next) => {
-  const filePath = req.file?.path;
-
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
@@ -65,7 +62,7 @@ router.post('/upload', uploadLimiter, upload.single('cv'), async (req, res, next
 
     let extractedText;
     try {
-      extractedText = await extractText(filePath, ext);
+      extractedText = await extractText(req.file.buffer, ext);
     } catch (err) {
       return res.status(422).json({ error: `Could not read file: ${err.message}` });
     }
@@ -103,8 +100,6 @@ router.post('/upload', uploadLimiter, upload.single('cv'), async (req, res, next
     res.json({ message: 'Analysis complete', analysis: updated });
   } catch (err) {
     next(err);
-  } finally {
-    if (filePath) fs.unlink(filePath, () => {});
   }
 });
 
