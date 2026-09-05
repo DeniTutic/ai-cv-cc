@@ -8,6 +8,29 @@ const cvRoutes = require('./routes/cv');
 const userRoutes = require('./routes/user');
 
 /**
+ * FRONTEND_URL takes a comma-separated list, because a Vercel project serves the
+ * production domain plus a different preview domain per deployment. Previews are
+ * matched by suffix so they don't each need adding by hand.
+ */
+function buildCorsOrigin() {
+  const allowed = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const previewSuffix = process.env.VERCEL_PREVIEW_SUFFIX;
+
+  return (origin, callback) => {
+    // Same-origin, curl and server-to-server requests send no Origin header.
+    if (!origin) return callback(null, true);
+    if (allowed.includes(origin)) return callback(null, true);
+    if (previewSuffix && origin.endsWith(previewSuffix)) return callback(null, true);
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+  };
+}
+
+/**
  * The Express app, with no side effects: no DB connection, no listen.
  * server.js owns the bootstrap so tests can import the app directly.
  */
@@ -15,10 +38,7 @@ function createApp({ rateLimit = true } = {}) {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
-  }));
+  app.use(cors({ origin: buildCorsOrigin(), credentials: true }));
 
   // Disabled under test so a suite of requests doesn't trip the limiter.
   if (rateLimit) app.use('/api/', apiLimiter);

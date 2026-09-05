@@ -163,3 +163,64 @@ Run `npm run doctor` first — it diagnoses most of the table below automaticall
 | `MongoServerError: bad auth` | Password not URL-encoded, or the DB user was created in a different project. |
 | Analysis fails with `429` | Gemini free-tier daily/minute quota hit. Check <https://aistudio.google.com/rate-limit>. |
 | Upload returns 413 | File over 5 MB. |
+
+
+---
+
+## 6. Deploying
+
+The backend and frontend deploy to different platforms, because the upload route
+holds a request open for 15-40s while Gemini works — longer than a serverless
+function should run.
+
+### Backend → Railway
+
+`railway.json` at the repo root already sets the build and start commands and
+points the healthcheck at `/api/health`. In the Railway dashboard:
+
+1. **New Project → Deploy from GitHub repo →** `DeniTutic/ai-cv-cc`.
+2. **Variables** — add these:
+
+   | Key | Value |
+   |---|---|
+   | `NODE_ENV` | `production` |
+   | `MONGO_URI` | your Atlas string |
+   | `GEMINI_API_KEY` | your AI Studio key |
+   | `GEMINI_MODEL` | `gemini-2.5-flash` |
+   | `AUTH0_DOMAIN` | your tenant |
+   | `AUTH0_AUDIENCE` | your API identifier |
+   | `FRONTEND_URL` | your Vercel URL (set after the frontend deploys) |
+   | `VERCEL_PREVIEW_SUFFIX` | `.vercel.app` — lets preview deploys call the API |
+
+   Do **not** set `PORT`; Railway injects it.
+3. **Settings → Networking → Generate Domain.** Copy that URL.
+
+`FRONTEND_URL` accepts a comma-separated list, so you can keep
+`http://localhost:5173` in it while developing against the deployed API.
+
+### Frontend → Vercel
+
+Root directory is `frontend/`; `frontend/vercel.json` handles the SPA rewrite.
+
+Environment variables (**Settings → Environment Variables**):
+
+| Key | Value |
+|---|---|
+| `VITE_AUTH0_DOMAIN` | your tenant |
+| `VITE_AUTH0_CLIENT_ID` | your SPA client ID |
+| `VITE_AUTH0_AUDIENCE` | same as `AUTH0_AUDIENCE` |
+| `VITE_API_BASE_URL` | your Railway URL |
+
+Vite inlines these at **build** time, so after changing any of them you must
+**redeploy** — restarting is not enough.
+
+### Then, in Auth0
+
+Add the Vercel URL to **Allowed Callback URLs**, **Allowed Logout URLs** and
+**Allowed Web Origins**, alongside `http://localhost:5173`.
+
+### Order
+
+Deploy the frontend first to learn its URL, set `FRONTEND_URL` on Railway, then
+set `VITE_API_BASE_URL` on Vercel and redeploy. The two reference each other, so
+one redeploy each is unavoidable.
