@@ -57,13 +57,15 @@ function createApp({ rateLimit = true, beforeRoutes } = {}) {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Everything below runs only after this resolves. The serverless entry uses it
-  // to await the cached database connection; registering it after the routes
-  // would be too late, since Express runs middleware in registration order.
-  if (beforeRoutes) app.use(beforeRoutes);
+  // Mounted per-router rather than app-wide, and ahead of each router so it runs
+  // first -- Express runs middleware in registration order, so attaching it
+  // after the routes would be too late. Scoping it here keeps 404s and the
+  // health check from needing a database, so a stray path (or a bot scan) never
+  // triggers a connection.
+  const gate = beforeRoutes ? [beforeRoutes] : [];
 
-  app.use('/api/cv', cvRoutes);
-  app.use('/api/user', userRoutes);
+  app.use('/api/cv', ...gate, cvRoutes);
+  app.use('/api/user', ...gate, userRoutes);
 
   app.use((req, res) => {
     res.status(404).json({ error: 'Not found.' });

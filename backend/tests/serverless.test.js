@@ -50,6 +50,19 @@ test('the health check answers without touching the database', async () => {
   restore();
 });
 
+test('an unknown path 404s without opening a database connection', async () => {
+  const { handler, connectCalls, restore } = loadHandler({
+    connectImpl: async () => { throw new Error('database is down'); }
+  });
+
+  const res = await request(handler).get('/api/nope');
+
+  assert.equal(res.status, 404, 'a missing route is not a database problem');
+  assert.equal(res.body.error, 'Not found.');
+  assert.equal(connectCalls(), 0, 'a stray path or bot scan must not cost a connection');
+  restore();
+});
+
 test('reuses one connection across invocations instead of dialling per request', async () => {
   const { handler, connectCalls, restore } = loadHandler();
 
